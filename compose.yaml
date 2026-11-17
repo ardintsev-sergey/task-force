@@ -1,0 +1,56 @@
+name: task-force
+
+services:
+  php:
+    container_name: task-force-php
+    build:
+      context: ./docker/php
+    image: task-force-php:8.4
+    working_dir: /var/www/html
+    environment:
+      TZ: Europe/Moscow
+    volumes:
+      - type: bind
+        source: .
+        target: /var/www/html
+        bind:
+          create_host_path: false
+    networks:
+      task-force:
+        aliases:
+          - task-force-fpm
+      local-network:
+        aliases:
+          - task-force-php
+    restart: unless-stopped
+
+  nginx:
+    container_name: task-force-nginx
+    image: nginx:1.29-alpine
+    volumes:
+      - type: bind
+        source: .
+        target: /var/www/html
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ./docker/nginx/default.conf
+        target: /etc/nginx/conf.d/default.conf
+        read_only: true
+        bind:
+          create_host_path: false
+    depends_on:
+      - php
+    networks:
+      task-force:
+      local-network:
+        aliases:
+          - task-force-nginx
+    restart: unless-stopped
+
+networks:
+  task-force:
+  local-network:
+    external: true
+    name: local-network
